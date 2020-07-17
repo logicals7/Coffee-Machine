@@ -1,0 +1,505 @@
+type: edu
+custom_name: stage6
+files:
+- name: tests.py
+  visible: false
+  text: |
+    from hstest.stage_test import *
+    from hstest.test_case import TestCase
+
+    CheckResult.correct = lambda: CheckResult(True, '')
+    CheckResult.wrong = lambda feedback: CheckResult(False, feedback)
+
+    test1_input = '''remaining
+    buy
+    2
+    buy
+    2
+    fill
+    1000
+    0
+    0
+    0
+    buy
+    2
+    take
+    remaining
+    exit
+    '''
+
+    test2_input = '''remaining
+    fill
+    3000
+    3000
+    3000
+    3000
+    remaining
+    exit
+    '''
+
+    test3_input = '''remaining
+    buy
+    1
+    remaining
+    exit
+    '''
+
+    test4_input = '''remaining
+    buy
+    2
+    remaining
+    exit
+    '''
+
+    test5_input = '''remaining
+    buy
+    3
+    remaining
+    exit
+    '''
+
+    test6_input = '''remaining
+    take
+    remaining
+    exit
+    '''
+
+    test7_input = '''remaining
+    buy
+    back
+    remaining
+    exit
+    '''
+
+
+    class CoffeeMachineTest(StageTest):
+        def generate(self) -> List[TestCase]:
+            return TestCase.from_stepik(
+                [
+                    (
+                        test1_input,
+                        (
+                            700 - 400,
+                            390 - 540,
+                            80 - 120,
+                            7 - 9,
+                            0 - 550,
+                            "This test is exactly like in the example "
+                            "- try to run it by yourself"
+                        )
+                    ),
+
+                    (
+                        test2_input,
+                        (
+                            3000,
+                            3000,
+                            3000,
+                            3000,
+                            0,
+                            "This test checks \"fill\" action"
+                        )
+                    ),
+
+                    (
+                        test3_input,
+                        (
+                            -250,
+                            0,
+                            -16,
+                            -1,
+                            4,
+                            "This test checks \"buy\" " +
+                            "action with the first variant of coffee"
+                        )
+                    ),
+
+                    (
+                        test4_input,
+                        (
+                            -350,
+                            -75,
+                            -20,
+                            -1,
+                            7,
+                            "This test checks \"buy\" " +
+                            "action with the second variant of coffee"
+                        )
+                    ),
+
+                    (
+                        test5_input,
+                        (
+                            -200,
+                            -100,
+                            -12,
+                            -1,
+                            6,
+                            "This test checks \"buy\" " +
+                            "action with the third variant of coffee"
+                        )
+                    ),
+                    (
+                        test6_input,
+                        (
+                            0,
+                            0,
+                            0,
+                            0,
+                            -550,
+                            "This test checks \"take\" action"
+                        )
+                    ),
+
+                    (
+                        test7_input,
+                        (
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            "This test checks \"back\" " +
+                            "action right after \"buy\" action"
+                        )
+                    ),
+                ]
+            )
+
+        def check(self, reply: str, clue: Any) -> CheckResult:
+            if len(reply.splitlines()) <= 1:
+                return CheckResult.wrong('Too few lines in output')
+
+            water_, milk_, beans_, cups_, money_, feedback = clue
+
+            milk = []
+            water = []
+            beans = []
+            cups = []
+            money = []
+
+            for line in reply.splitlines():
+                line = line.replace('$', '').strip()
+                if len(line.split()) == 0:
+                    continue
+                first_word = line.split()[0]
+                if not first_word.isdigit():
+                    continue
+                amount = int(first_word)
+                if 'milk' in line:
+                    milk += amount,
+                elif 'water' in line:
+                    water += amount,
+                elif 'beans' in line:
+                    beans += amount,
+                elif 'cups' in line:
+                    cups += amount,
+                elif 'money' in line or 'cash' in line:
+                    money += amount,
+
+            if len(milk) != 2:
+                return CheckResult.wrong(
+                    "There should be two lines with \"milk\", " +
+                    f"found: {len(milk)}"
+                )
+
+            if len(water) != 2:
+                return CheckResult.wrong(
+                    "There should be two lines with \"water\", " +
+                    f"found: {len(water)}"
+                )
+
+            if len(beans) != 2:
+                return CheckResult.wrong(
+                    "There should be two lines with \"beans\", " +
+                    f"found: {len(beans)}"
+                )
+
+            if len(cups) != 2:
+                return CheckResult.wrong(
+                    "There should be two lines with \"cups\", " +
+                    f"found: {len(cups)}"
+                )
+
+            if len(money) != 2:
+                return CheckResult.wrong(
+                    "There should be two lines with \"money\", " +
+                    f"found: {len(money)}"
+                )
+
+            milk = milk[0], milk[-1]
+            water = water[0], water[-1]
+            beans = beans[0], beans[-1]
+            cups = cups[0], cups[-1]
+            money = money[0], money[-1]
+
+            diff = lambda item: item[1] - item[0]
+
+            is_correct = (
+                diff(water) == water_ and
+                diff(milk) == milk_ and
+                diff(beans) == beans_ and
+                diff(cups) == cups_ and
+                diff(money) == money_
+            )
+            return CheckResult(is_correct, feedback)
+
+
+    if __name__ == '__main__':
+        CoffeeMachineTest('machine.coffee_machine').run_tests()
+  learner_created: false
+- name: machine/coffee_machine.py
+  visible: true
+  text: |-
+    ####################################
+    #Defining Functions
+    ####################################
+    def buy():
+        buy_option = input("\nWhat do you want to buy? 1 - espresso, 2 - latte, 3 - cappuccino:")
+
+        if buy_option == "1":
+            espresso_water_need = 250
+            espresso_coffee_beans_need = 16
+            espresso_cost = 4
+            global avail_water
+            global avail_milk
+            global avail_coffee_beans
+            global avail_disposable_cups
+            global avail_money
+            if((espresso_water_need <= avail_water) and (espresso_coffee_beans_need <= avail_coffee_beans)):
+                x = print("I have enough resources, making you a coffee!\n")
+                # calculate remaining
+                avail_water -= espresso_water_need
+                avail_coffee_beans -= espresso_coffee_beans_need
+                avail_disposable_cups -= 1
+                avail_money += espresso_cost
+            else:
+                if avail_water < espresso_water_need:
+                    x = print("Sorry, not enough water!\n")
+                elif avail_coffee_beans < espresso_coffee_beans_need:
+                    x = print("Sorry, not enough coffee beans!\n")
+            return x
+
+        elif buy_option == "2":
+            latte_water_need = 350
+            latte_milk_need = 75
+            latte_coffee_beans_need = 20
+            latte_cost = 7
+            if((latte_water_need <= avail_water) and (latte_milk_need <= avail_milk) and (latte_coffee_beans_need <= avail_coffee_beans)):
+                x = print("I have enough resources, making you a coffee!\n")
+                # calculate remaining
+                avail_water -= latte_water_need
+                avail_milk -= latte_milk_need
+                avail_coffee_beans -= latte_coffee_beans_need
+                avail_disposable_cups -= 1
+                avail_money += latte_cost
+            else:
+                if avail_water < latte_water_need:
+                    x = print("Sorry, not enough water!\n")
+                elif avail_milk < latte_milk_need:
+                    x = print("Sorry, not enough milk!\n")
+                elif avail_coffee_beans < latte_coffee_beans_need:
+                    x = print("Sorry, not enough coffee beans!\n")
+            return x
+
+        elif buy_option == "3":
+            cappuccino_water_need = 200
+            cappuccino_milk_need = 100
+            cappuccino_coffee_beans_need = 12
+            cappuccino_cost = 6
+            if((cappuccino_water_need <= avail_water) and (cappuccino_milk_need <= avail_milk) and (cappuccino_coffee_beans_need <= avail_coffee_beans)):
+                x = print("I have enough resources, making you a coffee!\n")
+                # calculate remaining
+                avail_water -= cappuccino_water_need
+                avail_milk -= cappuccino_milk_need
+                avail_coffee_beans -= cappuccino_coffee_beans_need
+                avail_disposable_cups -= 1
+                avail_money += cappuccino_cost
+            else:
+                if avail_water < cappuccino_water_need:
+                    x = print("Sorry, not enough water!\n")
+                elif avail_milk < cappuccino_milk_need:
+                    x = print("Sorry, not enough milk!\n")
+                elif avail_coffee_beans < cappuccino_coffee_beans_need:
+                    x = print("Sorry, not enough coffee beans!\n")
+            return x
+
+
+    def fill():
+        water_fill_amt = int(input("\nWrite how many ml of water do you want to add:"))
+        milk_fill_amt = int(input("Write how many ml of milk do you want to add:"))
+        coffee_beans_fill_amt = int(input("Write how many grams of coffee beans do you want to add:"))
+        disposable_cups_fill_amt = int(input("Write how many disposable cups of coffee do you want to add:"))
+        global avail_water
+        global avail_milk
+        global avail_coffee_beans
+        global avail_disposable_cups
+        global avail_money
+        #updating ingredients amount
+        avail_water += water_fill_amt
+        avail_milk += milk_fill_amt
+        avail_coffee_beans += coffee_beans_fill_amt
+        avail_disposable_cups += disposable_cups_fill_amt
+        print('\n')
+
+
+    def take():
+        print("\nI gave you $" + str(avail_money))
+        x = print("\nThe coffee machine has:\n", avail_water, "of water\n", avail_milk, "of milk\n",
+                  avail_coffee_beans, "of coffee beans\n", avail_disposable_cups, "of disposable cups\n",
+                  avail_money - avail_money, "of money")
+        return x
+
+
+    def remaining():
+        x = print("\nThe cofffe machine has:\n", avail_water, "of water\n", avail_milk, "of milk\n",
+                  avail_coffee_beans, "of coffee beans\n", avail_disposable_cups, "of disposable cups\n",
+                  "$" + str(avail_money), "of money\n\n")
+        return x
+
+
+    def exit():
+        while True:
+            break
+
+    #####################################
+    # ingredients available initially
+    #####################################
+    avail_water = 400
+    avail_milk = 540
+    avail_coffee_beans = 120
+    avail_disposable_cups = 9
+    avail_money = 550
+
+    #####################################
+    # main code
+    #####################################
+    #choose_option=""
+    while True:#choose_option != "exit":
+        choose_option = input("Write action (buy, fill, take, remaining, exit):")
+        if choose_option == "buy":
+            buy()
+        elif choose_option == "fill":
+            fill()
+        elif choose_option == "take":
+            take()
+        elif choose_option == "remaining":
+            remaining()
+        elif choose_option == "exit":
+            exit()
+  learner_created: false
+- name: machine/demo.py
+  visible: true
+  text: |-
+    def ingredients_avail():
+        print('''The coffee machine has:
+    400 of water
+    540 of milk
+    120 of coffee beans
+    9 of disposable cups
+    550 of money
+        ''')
+
+
+    def buy():
+        buy_option = input("What do you want to buy? 1 - espresso, 2 - latte, 3 - cappuccino:")
+
+        if buy_option == "1":
+            espresso_water_need = 250
+            espresso_coffee_beans_need = 16
+            espresso_cost = 4
+
+            x = print("\nThe coffee machine has:\n", avail_water - espresso_water_need, "of water\n",
+                      avail_milk, "of milk\n",
+                      avail_coffee_beans - espresso_coffee_beans_need, "of coffee beans\n", avail_disposable_cups - 1,
+                      "of disposable cups\n",
+                      avail_money + espresso_cost, "of money")
+            return x
+
+        elif buy_option == "2":
+            latte_water_need = 350
+            latte_milk_need = 75
+            latte_coffee_beans_need = 20
+            latte_cost = 7
+            x = print("\nThe coffee machine has:\n", avail_water - latte_water_need, "of water\n",
+                      avail_milk - latte_milk_need, "of milk\n",
+                      avail_coffee_beans - latte_coffee_beans_need, "of coffee beans\n", avail_disposable_cups - 1,
+                      "of disposable cups\n",
+                      avail_money + latte_cost, "of money")
+            return x
+
+        elif buy_option == "3":
+            cappuccino_water_need = 200
+            cappuccino_milk_need = 100
+            cappuccino_coffee_beans_need = 12
+            cappuccino_cost = 6
+            x = print("\nThe coffee machine has:\n", avail_water - cappuccino_water_need, "of water\n",
+                      avail_milk - cappuccino_milk_need, "of milk\n",
+                      avail_coffee_beans - cappuccino_coffee_beans_need, "of coffee beans\n", avail_disposable_cups - 1,
+                      "of disposable cups\n",
+                      avail_money + cappuccino_cost, "of money")
+            return x
+
+
+    def fill():
+        water_fill_amt = int(input("Write how many ml of water do you want to add:"))
+        milk_fill_amt = int(input("Write how many ml of milk do you want to add:"))
+        coffee_beans_fill_amt = int(input("Write how many grams of coffee beans do you want to add:"))
+        disposable_cups_fill_amt = int(input("Write how many disposable cups of coffee do you want to add:"))
+
+        x = print("\nThe coffee machine has:\n", avail_water + water_fill_amt, "of water\n", avail_milk + milk_fill_amt,
+                  "of milk\n",
+                  avail_coffee_beans + coffee_beans_fill_amt, "of coffee beans\n",
+                  avail_disposable_cups + disposable_cups_fill_amt, "of disposable cups\n",
+                  avail_money, "of money")
+        return x
+
+
+    def take():
+        print("I gave you $" + str(avail_money))
+        x = print("\nThe coffee machine has:\n", avail_water, "of water\n", avail_milk, "of milk\n",
+                  avail_coffee_beans, "of coffee beans\n", avail_disposable_cups, "of disposable cups\n",
+                  avail_money - avail_money, "of money")
+        return x
+
+
+    def remaining():
+
+
+    def exit():
+        pass
+
+
+    # ingredients available initially
+    avail_water = 400
+    avail_milk = 540
+    avail_coffee_beans = 120
+    avail_disposable_cups = 9
+    avail_money = 550
+
+    # variable declared for remaining amt of ingredients
+
+
+    # main code
+    ingredients_avail()
+
+    while True:
+        choose_option = input("Write action (buy, fill, take, remaining, exit):")
+        if choose_option == "buy":
+            buy()
+        elif choose_option == "fill":
+            fill()
+        elif choose_option == "take":
+            take()
+        elif choose_option == "remaining":
+            remaining()
+        elif choose_option == "exit":
+            break
+  learner_created: false
+feedback_link: https://hyperskill.org/projects/68/stages/371/implement
+status: Solved
+feedback:
+  message: Congratulations! Continue on <a href="https://hyperskill.org/projects/68/stages/371/implement">JetBrains
+    Academy</a>
+  time: Thu, 16 Jul 2020 23:17:46 UTC
+record: 6
